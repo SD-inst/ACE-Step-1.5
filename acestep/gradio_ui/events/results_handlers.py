@@ -5,11 +5,7 @@ Contains event handlers and helper functions related to result display, scoring,
 import os
 import json
 import datetime
-import math
 import re
-import tempfile
-import shutil
-import zipfile
 import time as time_module
 import sys
 from typing import Dict, Any, Optional, List
@@ -25,7 +21,7 @@ from acestep.gpu_config import (
     check_batch_size_limit,
 )
 
-# Platform detection for Windows-specific fixes
+# Platform detection for Windows-specific fixess
 IS_WINDOWS = sys.platform == "win32"
 
 # Global results directory inside project root
@@ -929,6 +925,7 @@ def generate_with_progress(
     for idx in range(8):
         path = audio_outputs[idx]
         if path:
+            # Pass path directly; Gradio Audio component with type="filepath" expects a string path
             audio_playback_updates.append(gr.update(value=path, label=f"Sample {idx+1} (Ready)", interactive=True))
             logger.info(f"[generate_with_progress] Audio {idx+1} path: {path}")
         else:
@@ -1290,8 +1287,7 @@ def generate_lrc_handler(dit_handler, sample_idx, current_batch_index, batch_que
         Tuple of (lrc_display_update, details_accordion_update, batch_queue)
         Note: No audio_update - subtitles updated via lrc_display.change()
     """
-    import torch
-    
+
     if current_batch_index not in batch_queue:
         return gr.skip(), gr.skip(), batch_queue
 
@@ -1530,6 +1526,10 @@ def generate_with_batch_management(
     final_result_from_inner = None
     for partial_result in generator:
         final_result_from_inner = partial_result
+        # Progressive yields disabled on all platforms to prevent audio preview
+        # from reverting to the first generated song due to Gradio event queue
+        # race condition (generator yields vs .change() event handlers).
+        # Only the final yield (with batch management state) is sent to the UI.
     result = final_result_from_inner
     all_audio_paths = result[8]
 
@@ -1997,6 +1997,7 @@ def navigate_to_previous_batch(current_batch_index, batch_queue):
     for idx in range(8):
         if idx < len(real_audio_paths):
             audio_path = real_audio_paths[idx].replace("\\", "/")  # Normalize path
+            # Pass path directly; Gradio Audio component with type="filepath" expects a string path
             audio_updates.append(gr.update(value=audio_path))
         else:
             audio_updates.append(gr.update(value=None))
@@ -2120,6 +2121,7 @@ def navigate_to_next_batch(autogen_enabled, current_batch_index, total_batches, 
     for idx in range(8):
         if idx < len(real_audio_paths):
             audio_path = real_audio_paths[idx].replace("\\", "/")  # Normalize path
+            # Pass path directly; Gradio Audio component with type="filepath" expects a string path
             audio_updates.append(gr.update(value=audio_path))
         else:
             audio_updates.append(gr.update(value=None))

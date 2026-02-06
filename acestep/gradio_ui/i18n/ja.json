@@ -164,6 +164,8 @@
     "lm_batch_chunk_info": "LMバッチチャンクあたりの最大アイテム数(デフォルト: 8、GPUメモリによる制限)",
     "codes_strength_label": "LM コード強度",
     "codes_strength_info": "LM生成コードを使用するデノイジングステップ数を制御",
+    "similarity_denoise_label": "類似度 / ノイズ除去",
+    "similarity_denoise_info": "出力が参照オーディオにどれだけ忠実かを制御します。高い値ほど構造を保持します。",
     "cover_strength_label": "オーディオカバー強度",
     "cover_strength_info": "カバーモードを使用するデノイジングステップ数を制御",
     "score_sensitivity_label": "品質スコア感度",
@@ -194,7 +196,7 @@
     "prev_btn": "◀ 前へ",
     "next_btn": "次へ ▶",
     "restore_params_btn": "↙️ これらの設定をUIに適用(バッチパラメータを復元)",
-    "batch_results_title": "📁 バッチ結果と生成詳細",
+    "batch_results_title": "👇 クリックしてバッチ結果と生成詳細を表示",
     "all_files_label": "📁 すべての生成ファイル(ダウンロード)",
     "generation_details": "生成詳細"
   },
