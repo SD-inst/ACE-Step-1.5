@@ -357,6 +357,7 @@ class LLMHandler:
             full_lm_model_path = os.path.join(checkpoint_dir, lm_model_path)
             if not os.path.exists(full_lm_model_path):
                 return f"❌ 5Hz LM model not found at {full_lm_model_path}", False
+            self.model_path = full_lm_model_path
             
             logger.info("loading 5Hz LM tokenizer... it may take 80~90s")
             start_time = time.time()
@@ -386,7 +387,9 @@ class LLMHandler:
             # Initialize based on user-selected backend
             if backend == "vllm":
                 # Try to initialize with vllm
-                status_msg = self._initialize_5hz_lm_vllm(full_lm_model_path)
+                status_msg = "✅ Will load the model lazily when needed" #self._initialize_5hz_lm_vllm(full_lm_model_path)
+                self.llm_initialized = True
+                self.llm_backend = "vllm"
                 logger.info(f"5Hz LM status message: {status_msg}")
                 # Check if initialization failed (status_msg starts with ❌)
                 if status_msg.startswith("❌"):
@@ -489,8 +492,10 @@ class LLMHandler:
         Accepts either a single formatted prompt (str) or a list of formatted prompts (List[str]).
         Returns a single string for single mode, or a list of strings for batch mode.
         """
+        if self.llm is None:
+            logger.info("Running lazy LLM init")
+            self._initialize_5hz_lm_vllm(self.model_path)
         from nanovllm import SamplingParams
-
         # Determine if batch mode
         formatted_prompt_list, is_batch = self._normalize_batch_input(formatted_prompts)
         batch_size = len(formatted_prompt_list)
@@ -1919,6 +1924,8 @@ class LLMHandler:
             prompt = handler.build_formatted_prompt(caption, lyric)
             text, status = handler.generate_from_formatted_prompt(prompt, {"temperature": 0.7})
         """
+        if self.llm is None:
+            self._initialize_5hz_lm_vllm(self.model_path)
         if not getattr(self, "llm_initialized", False):
             return "", "❌ 5Hz LM not initialized. Please initialize it first."
         if self.llm is None or self.llm_tokenizer is None:

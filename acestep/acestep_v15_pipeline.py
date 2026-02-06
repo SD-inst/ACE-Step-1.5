@@ -361,7 +361,7 @@ def main():
 
             if args.api_key:
                 print("API authentication enabled")
-            print("API endpoints enabled: /health, /v1/models, /release_task, /query_result, /create_random_sample, /format_lyrics")
+            print("API endpoints enabled: /health, /v1/models, /release_task, /query_result, /create_random_sample, /format_lyrics, /unload_llm")
 
             # Keep the main thread alive
             try:

@@ -2,6 +2,8 @@
 Gradio API Routes Module
 Add API endpoints compatible with api_server.py and CustomAceStep to Gradio application
 """
+import atexit
+import gc
 import json
 import os
 import random
@@ -11,6 +13,8 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import FileResponse
+from loguru import logger
+import torch
 
 # Global results directory inside project root
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -506,6 +510,21 @@ async def release_task(request: Request, authorization: Optional[str] = Header(N
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post("/unload_llm")
+async def unload_llm(request: Request):
+    logger.info("LM unloading request...")
+    llm_handler = request.app.state.llm_handler
+    if llm_handler.llm is not None:
+        llm_handler.llm.reset()
+        atexit.unregister(llm_handler.llm.exit)
+        llm_handler.llm.exit()
+        del llm_handler.llm
+        llm_handler.llm = None
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    logger.info("Unloaded LM")
 
 def setup_api_routes_to_app(app, dit_handler, llm_handler, api_key: Optional[str] = None):
     """
