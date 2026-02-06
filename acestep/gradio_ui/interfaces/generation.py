@@ -112,6 +112,14 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                     label=t("service.device_label"),
                     info=t("service.device_info")
                 )
+                
+                # Determine model type for setting initial inference_steps
+                actual_model = config_path_value
+                actual_model_lower = (actual_model or "").lower()
+                is_turbo_model = "turbo" in actual_model_lower
+                
+                # Get initial inference_steps value based on model type
+                initial_inference_steps = 8 if is_turbo_model else 32
             
             with gr.Row():
                 # Get available 5Hz LM model list
@@ -492,8 +500,8 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
             with gr.Row():
                 inference_steps = gr.Slider(
                     minimum=1,
-                    maximum=20,
-                    value=8,
+                    maximum=20 if is_turbo_model else 200,
+                    value=initial_inference_steps,
                     step=1,
                     label=t("generation.inference_steps_label"),
                     info=t("generation.inference_steps_info")
@@ -505,7 +513,7 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                     step=0.1,
                     label=t("generation.guidance_scale_label"),
                     info=t("generation.guidance_scale_info"),
-                    visible=False
+                    visible=not is_turbo_model
                 )
                 with gr.Column():
                     seed = gr.Textbox(
@@ -531,7 +539,7 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                     label=t("generation.use_adg_label"),
                     value=False,
                     info=t("generation.use_adg_info"),
-                    visible=False
+                    visible=not is_turbo_model
                 )
                 shift = gr.Slider(
                     minimum=1.0,
@@ -564,7 +572,7 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                     value=0.0,
                     step=0.01,
                     label=t("generation.cfg_interval_start"),
-                    visible=False
+                    visible=not is_turbo_model
                 )
                 cfg_interval_end = gr.Slider(
                     minimum=0.0,
@@ -572,7 +580,7 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                     value=1.0,
                     step=0.01,
                     label=t("generation.cfg_interval_end"),
-                    visible=False
+                    visible=not is_turbo_model
                 )
 
             # LM (Language Model) Parameters
