@@ -415,6 +415,7 @@ class LLMHandler:
         except Exception as e:
             return f"❌ Error initializing 5Hz LM: {str(e)}\n\nTraceback:\n{traceback.format_exc()}", False
     
+    @sq
     def _initialize_5hz_lm_vllm(self, model_path: str, enforce_eager: bool = False) -> str:
         """Initialize 5Hz LM model using vllm backend. When enforce_eager is True, CUDA graph
         capture is disabled (required when LoRA training may run in the same process)."""
@@ -423,7 +424,7 @@ class LLMHandler:
             logger.error("CUDA is not available. Please check your GPU setup.")
             return "❌ CUDA is not available. Please check your GPU setup."
         try:
-            from nanovllm import LLM, SamplingParams
+            from nanovllm import LLM
         except ImportError:
             self.llm_initialized = False
             logger.error("nano-vllm is not installed. Please install it using 'cd acestep/third_parts/nano-vllm && pip install .")
