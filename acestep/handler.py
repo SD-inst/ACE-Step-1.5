@@ -4,18 +4,15 @@ Encapsulates all data processing and business logic as a bridge between model an
 """
 import os
 
+from acestep.sq import sq
+
 # Disable tokenizers parallelism to avoid fork warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import math
-from copy import deepcopy
-import tempfile
 import traceback
 import re
 import random
-import uuid
-import hashlib
-import json
 from contextlib import contextmanager
 from typing import Optional, Dict, Any, Tuple, List, Union
 
@@ -27,15 +24,13 @@ from tqdm import tqdm
 from loguru import logger
 import warnings
 
-from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
-from transformers.generation.streamers import BaseStreamer
+from transformers import AutoTokenizer, AutoModel
 from diffusers.models import AutoencoderOobleck
 from acestep.model_downloader import (
     ensure_main_model,
     ensure_dit_model,
     check_main_model_exists,
     check_model_exists,
-    get_checkpoints_dir,
 )
 from acestep.constants import (
     TASK_INSTRUCTIONS,
@@ -2708,6 +2703,7 @@ class AceStepHandler:
         
         return final_latents
 
+    @sq
     def generate_music(
         self,
         captions: str,

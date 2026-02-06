@@ -5,6 +5,8 @@ Handler wrapper connecting model and UI
 import os
 import sys
 
+from acestep import sq
+
 # Load environment variables from .env file in project root
 # This allows configuration without hardcoding values
 # Falls back to .env.example if .env is not found
@@ -154,7 +156,17 @@ def main():
     parser.add_argument("--auth-password", type=str, default=None, help="Password for Gradio authentication")
     parser.add_argument("--api-key", type=str, default=None, help="API key for API endpoints authentication")
 
+    parser.add_argument(
+        "--sq-url",
+        type=str,
+        default=None,
+        help="Service queue URL",
+    )
+
     args = parser.parse_args()
+
+    if args.sq_url:
+        sq.sq_url = args.sq_url
 
     # Enable API requires init_service
     if args.enable_api:

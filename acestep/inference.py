@@ -8,10 +8,10 @@ backward-compatible Gradio UI support.
 
 import math
 import os
-import tempfile
-from typing import Optional, Union, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass, field, asdict
 from loguru import logger
+from acestep.sq import sq
 
 from acestep.audio_utils import AudioSaver, generate_uuid_from_params
 
@@ -290,6 +290,7 @@ def _update_metadata_from_lm(
 
 
 @_get_spaces_gpu_decorator(duration=180)
+@sq
 def generate_music(
     dit_handler,
     llm_handler,
