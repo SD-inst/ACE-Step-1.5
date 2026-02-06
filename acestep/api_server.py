@@ -66,6 +66,7 @@ from acestep.gpu_config import (
     get_recommended_lm_model,
     is_lm_model_supported,
     GPUConfig,
+    VRAM_16GB_MIN_GB,
 )
 
 
@@ -695,14 +696,20 @@ def _get_model_name(config_path: str) -> str:
     return os.path.basename(normalized)
 
 
+_project_env_loaded = False
+
+
 def _load_project_env() -> None:
-    if load_dotenv is None:
+    """Load .env at most once per process to avoid epoch-boundary stalls (e.g. Windows LoRA training)."""
+    global _project_env_loaded
+    if _project_env_loaded or load_dotenv is None:
         return
     try:
         project_root = _get_project_root()
         env_path = os.path.join(project_root, ".env")
         if os.path.exists(env_path):
             load_dotenv(env_path, override=False)
+        _project_env_loaded = True
     except Exception:
         # Optional best-effort: continue even if .env loading fails.
         pass
@@ -1562,7 +1569,7 @@ def create_app() -> FastAPI:
         app.state.gpu_config = gpu_config
 
         gpu_memory_gb = gpu_config.gpu_memory_gb
-        auto_offload = gpu_memory_gb > 0 and gpu_memory_gb < 16
+        auto_offload = gpu_memory_gb > 0 and gpu_memory_gb < VRAM_16GB_MIN_GB
 
         # Print GPU configuration info
         print(f"\n{'='*60}")
@@ -1781,6 +1788,7 @@ def create_app() -> FastAPI:
                 device=lm_device,
                 offload_to_cpu=lm_offload,
                 dtype=handler.dtype,
+                disable_cuda_graphs=True,
             )
             if llm_ok:
                 app.state._llm_initialized = True
@@ -2330,14 +2338,19 @@ def create_app() -> FastAPI:
             return _wrap_response(None, code=500, error=f"format_sample error: {str(e)}")
 
     @app.get("/v1/audio")
-    async def get_audio(path: str, _: None = Depends(verify_api_key)):
+    async def get_audio(path: str, request: Request, _: None = Depends(verify_api_key)):
         """Serve audio file by path."""
         from fastapi.responses import FileResponse
 
-        if not os.path.exists(path):
-            raise HTTPException(status_code=404, detail=f"Audio file not found: {path}")
+        # Security: Validate path is within allowed directory to prevent path traversal
+        resolved_path = os.path.realpath(path)
+        allowed_dir = os.path.realpath(request.app.state.temp_audio_dir)
+        if not resolved_path.startswith(allowed_dir + os.sep) and resolved_path != allowed_dir:
+            raise HTTPException(status_code=403, detail="Access denied: path outside allowed directory")
+        if not os.path.exists(resolved_path):
+            raise HTTPException(status_code=404, detail="Audio file not found")
 
-        ext = os.path.splitext(path)[1].lower()
+        ext = os.path.splitext(resolved_path)[1].lower()
         media_types = {
             ".mp3": "audio/mpeg",
             ".wav": "audio/wav",
@@ -2346,7 +2359,7 @@ def create_app() -> FastAPI:
         }
         media_type = media_types.get(ext, "audio/mpeg")
 
-        return FileResponse(path, media_type=media_type)
+        return FileResponse(resolved_path, media_type=media_type)
 
     return app
 
