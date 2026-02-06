@@ -1529,17 +1529,6 @@ def generate_with_batch_management(
     final_result_from_inner = None
     for partial_result in generator:
         final_result_from_inner = partial_result
-        # Progressive yields disabled on Windows to prevent UI freeze
-        # On other platforms, yield progress updates normally
-        if not IS_WINDOWS:
-            # current_batch_index, total_batches, batch_queue, next_params,
-            # batch_indicator_text, prev_btn, next_btn, next_status, restore_btn
-            # Slice off extra_outputs and raw_codes_list (last 2 items) before re-yielding to UI
-            ui_result = partial_result[:-2] if len(partial_result) > 47 else (partial_result[:-1] if len(partial_result) > 46 else partial_result)
-            yield ui_result + (
-                gr.skip(), gr.skip(), gr.skip(), gr.skip(),
-                gr.skip(), gr.skip(), gr.skip(), gr.skip(), gr.skip()
-            )
     result = final_result_from_inner
     all_audio_paths = result[8]
 
