@@ -758,6 +758,7 @@ def understand_music(
         ...     print(f"BPM: {result.bpm}")
         ...     print(f"Lyrics: {result.lyrics}")
     """
+    llm_handler.ensure_vllm()
     # Check if LLM is initialized
     if not llm_handler.llm_initialized:
         return UnderstandResult(
@@ -935,6 +936,7 @@ def create_sample(
         ...     print(f"Lyrics: {result.lyrics}")
         ...     print(f"BPM: {result.bpm}")
     """
+    llm_handler.ensure_vllm()
     # Check if LLM is initialized
     if not llm_handler.llm_initialized:
         return CreateSampleResult(
@@ -1109,6 +1111,7 @@ def format_sample(
         ...     print(f"BPM: {result.bpm}")
         ...     print(f"Lyrics: {result.lyrics}")
     """
+    llm_handler.ensure_vllm()
     # Check if LLM is initialized
     if not llm_handler.llm_initialized:
         return FormatSampleResult(

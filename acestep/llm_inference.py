@@ -499,9 +499,7 @@ class LLMHandler:
         Accepts either a single formatted prompt (str) or a list of formatted prompts (List[str]).
         Returns a single string for single mode, or a list of strings for batch mode.
         """
-        if self.llm is None:
-            logger.info("Running lazy LLM init")
-            self._initialize_5hz_lm_vllm(self.model_path)
+        self.ensure_vllm()
         from nanovllm import SamplingParams
         # Determine if batch mode
         formatted_prompt_list, is_batch = self._normalize_batch_input(formatted_prompts)
@@ -1433,6 +1431,7 @@ class LLMHandler:
             print(metadata['caption'])  # "A cinematic orchestral piece..."
             print(metadata['lyrics'])   # "[Intro: ...]\\n..."
         """
+        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return {}, "❌ 5Hz LM not initialized. Please initialize it first."
         
@@ -1629,6 +1628,7 @@ class LLMHandler:
             print(metadata['caption'])  # "A gentle romantic acoustic pop ballad..."
             print(metadata['lyrics'])   # "[Intro: ...]\\n..."
         """
+        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return {}, "❌ 5Hz LM not initialized. Please initialize it first."
         
@@ -1806,6 +1806,7 @@ class LLMHandler:
             print(metadata['caption'])  # "A dramatic and powerful Latin pop track..."
             print(metadata['bpm'])      # 100
         """
+        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return {}, "❌ 5Hz LM not initialized. Please initialize it first."
         
@@ -1931,8 +1932,7 @@ class LLMHandler:
             prompt = handler.build_formatted_prompt(caption, lyric)
             text, status = handler.generate_from_formatted_prompt(prompt, {"temperature": 0.7})
         """
-        if self.llm is None:
-            self._initialize_5hz_lm_vllm(self.model_path)
+        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return "", "❌ 5Hz LM not initialized. Please initialize it first."
         if self.llm is None or self.llm_tokenizer is None:
@@ -2454,3 +2454,8 @@ class LLMHandler:
         
         else:
             raise ValueError(f"Unknown backend: {self.llm_backend}")
+
+    def ensure_vllm(self):
+        if self.llm is None:
+            logger.info("Running lazy LLM init")
+            self._initialize_5hz_lm_vllm(self.model_path)

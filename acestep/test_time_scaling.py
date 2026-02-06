@@ -339,6 +339,8 @@ def calculate_pmi_score_per_condition(
     - Metadata: Uses Top-k Recall.
     - Caption/Lyrics: Uses PMI (Normalized).
     """
+    if llm_handler.llm is None:
+        llm_handler._initialize_5hz_lm_vllm(llm_handler.model_path)
     if not llm_handler.llm_initialized:
         return {}, 0.0, "❌ LLM not initialized"
 
