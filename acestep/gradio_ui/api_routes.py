@@ -526,6 +526,8 @@ async def unload_llm(request: Request):
         llm_handler.llm.exit()
         del llm_handler.llm
         llm_handler.llm = None
+        del llm_handler._hf_model_for_scoring
+        llm_handler._hf_model_for_scoring = None
         gc.collect()
         torch.cuda.empty_cache()
 
