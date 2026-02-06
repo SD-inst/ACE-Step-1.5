@@ -1,0 +1,25 @@
+services:
+    gradio:
+        build:
+            dockerfile: Dockerfile
+        shm_size: 10gb
+        volumes:
+            - ./checkpoints:/app/checkpoints
+            - ./cache:/home/ubuntu/.cache
+            - ./local:/home/ubuntu/.local
+            - /mnt/nvme2Tb/AI/huggingface:/home/ubuntu/.cache/huggingface
+        ports:
+            - 7868:7860
+        command:
+            - --server-name
+            - 0.0.0.0
+        restart: unless-stopped
+        deploy:
+          resources:
+            reservations:
+              devices:
+                - driver: nvidia
+                  count: all
+                  capabilities: [ gpu ]
+
+
