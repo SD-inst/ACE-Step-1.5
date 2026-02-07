@@ -660,14 +660,12 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                     value=False,
                     info=t("generation.auto_score_info"),
                     scale=1,
-                    interactive=not service_mode  # Fixed in service mode
                 )
                 auto_lrc = gr.Checkbox(
                     label=t("generation.auto_lrc_label"),
                     value=False,
                     info=t("generation.auto_lrc_info"),
                     scale=1,
-                    interactive=not service_mode  # Fixed in service mode
                 )
                 lm_batch_chunk_size = gr.Number(
                     label=t("generation.lm_batch_chunk_label"),
