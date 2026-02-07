@@ -835,7 +835,6 @@ def handle_create_sample(
         - is_format_caption_state (True)
         - status_output
     """
-    llm_handler.ensure_vllm()
     # Check if LLM is initialized
     if not llm_handler.llm_initialized:
         gr.Warning(t("messages.lm_not_initialized"))
@@ -970,7 +969,6 @@ def handle_format_sample(
         - is_format_caption_state
         - status_output
     """
-    llm_handler.ensure_vllm()
     # Check if LLM is initialized
     if not llm_handler.llm_initialized:
         gr.Warning(t("messages.lm_not_initialized"))

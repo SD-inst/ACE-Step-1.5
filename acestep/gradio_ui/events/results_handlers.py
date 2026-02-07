@@ -1023,7 +1023,6 @@ def calculate_score_handler(
         
         # PMI-based scoring (requires audio codes and LLM)
         if has_audio_codes:
-            llm_handler.ensure_vllm()
             if not llm_handler.llm_initialized:
                 # Can still try DiT alignment if available
                 if not has_dit_alignment_data:

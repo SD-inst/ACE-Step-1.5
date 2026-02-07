@@ -1452,7 +1452,6 @@ class LLMHandler:
             print(metadata['caption'])  # "A cinematic orchestral piece..."
             print(metadata['lyrics'])   # "[Intro: ...]\\n..."
         """
-        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return {}, "❌ 5Hz LM not initialized. Please initialize it first."
         
@@ -1649,7 +1648,6 @@ class LLMHandler:
             print(metadata['caption'])  # "A gentle romantic acoustic pop ballad..."
             print(metadata['lyrics'])   # "[Intro: ...]\\n..."
         """
-        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return {}, "❌ 5Hz LM not initialized. Please initialize it first."
         
@@ -1827,7 +1825,6 @@ class LLMHandler:
             print(metadata['caption'])  # "A dramatic and powerful Latin pop track..."
             print(metadata['bpm'])      # 100
         """
-        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return {}, "❌ 5Hz LM not initialized. Please initialize it first."
         
@@ -1953,7 +1950,6 @@ class LLMHandler:
             prompt = handler.build_formatted_prompt(caption, lyric)
             text, status = handler.generate_from_formatted_prompt(prompt, {"temperature": 0.7})
         """
-        self.ensure_vllm()
         if not getattr(self, "llm_initialized", False):
             return "", "❌ 5Hz LM not initialized. Please initialize it first."
         if self.llm is None or self.llm_tokenizer is None:
