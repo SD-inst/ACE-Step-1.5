@@ -2,6 +2,8 @@
 5Hz LM (Language Model) Handler
 Handles all LM-related operations including initialization and generation
 """
+import atexit
+import gc
 import os
 import traceback
 import time
@@ -471,6 +473,7 @@ class LLMHandler:
             
             logger.info(f"Initializing 5Hz LM with model: {model_path}, enforce_eager: {enforce_eager}, tensor_parallel_size: 1, max_model_len: {self.max_model_len}, gpu_memory_utilization: {gpu_memory_utilization:.3f}")
             start_time = time.time()
+            self.unload_scoring()
             self.llm = LLM(
                 model=model_path,
                 enforce_eager=enforce_eager,
@@ -2452,16 +2455,13 @@ class LLMHandler:
             if self._hf_model_for_scoring is None:
                 logger.info("Loading HuggingFace model for scoring (from checkpoint)")
                 
-                # Get model path from vllm config
-                model_runner = self.llm.model_runner
-                model_path = model_runner.config.model
-                
                 # Load HuggingFace model from the same checkpoint
                 # This will load the original unfused weights
                 import time
+                self.unload_vllm()
                 start_time = time.time()
                 self._hf_model_for_scoring = AutoModelForCausalLM.from_pretrained(
-                    model_path,
+                    self.model_path,
                     trust_remote_code=True,
                     torch_dtype=self.dtype
                 )
@@ -2469,11 +2469,10 @@ class LLMHandler:
                 logger.info(f"HuggingFace model loaded in {load_time:.2f}s")
                 
                 # Move to same device as vllm model
-                device = next(model_runner.model.parameters()).device
-                self._hf_model_for_scoring = self._hf_model_for_scoring.to(device)
+                self._hf_model_for_scoring = self._hf_model_for_scoring.to(self.device)
                 self._hf_model_for_scoring.eval()
                 
-                logger.info(f"HuggingFace model for scoring ready on {device}")
+                logger.info(f"HuggingFace model for scoring ready on {self.device}")
             
             return self._hf_model_for_scoring
         
@@ -2484,3 +2483,20 @@ class LLMHandler:
         if self.llm is None:
             logger.info("Running lazy LLM init")
             self._initialize_5hz_lm_vllm(self.model_path)
+
+    def unload_vllm(self):
+        if self.llm is not None:
+            self.llm.reset()
+            atexit.unregister(self.llm.exit)
+            self.llm.exit()
+            del self.llm
+            self.llm = None
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    def unload_scoring(self):
+        if self._hf_model_for_scoring is not None:
+            del self._hf_model_for_scoring
+            self._hf_model_for_scoring = None
+        gc.collect()
+        torch.cuda.empty_cache()

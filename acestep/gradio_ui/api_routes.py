@@ -520,17 +520,8 @@ async def release_task(request: Request, authorization: Optional[str] = Header(N
 async def unload_llm(request: Request):
     logger.info("LM unloading request...")
     llm_handler = request.app.state.llm_handler
-    if llm_handler.llm is not None:
-        llm_handler.llm.reset()
-        atexit.unregister(llm_handler.llm.exit)
-        llm_handler.llm.exit()
-        del llm_handler.llm
-        llm_handler.llm = None
-        del llm_handler._hf_model_for_scoring
-        llm_handler._hf_model_for_scoring = None
-        gc.collect()
-        torch.cuda.empty_cache()
-
+    llm_handler.unload_vllm()
+    llm_handler.unload_scoring()
     logger.info("Unloaded LM")
 
 def setup_api_routes_to_app(app, dit_handler, llm_handler, api_key: Optional[str] = None):

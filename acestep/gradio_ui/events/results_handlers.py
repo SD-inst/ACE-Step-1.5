@@ -20,6 +20,7 @@ from acestep.gpu_config import (
     check_duration_limit,
     check_batch_size_limit,
 )
+from acestep.sq import sq
 
 # Platform detection for Windows-specific fixess
 IS_WINDOWS = sys.platform == "win32"
@@ -962,7 +963,7 @@ def generate_with_progress(
     )
 
 
-
+@sq
 def calculate_score_handler(
         llm_handler,
         audio_codes_str,
