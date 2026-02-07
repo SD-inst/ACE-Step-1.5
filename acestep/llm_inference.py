@@ -1955,7 +1955,7 @@ class LLMHandler:
         """
         if not getattr(self, "llm_initialized", False):
             return "", "❌ 5Hz LM not initialized. Please initialize it first."
-        if self.llm is None or self.llm_tokenizer is None:
+        if self.llm_tokenizer is None:
             return "", "❌ 5Hz LM is missing model or tokenizer."
 
         cfg = cfg or {}
