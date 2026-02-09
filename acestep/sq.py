@@ -12,7 +12,7 @@ def sq(func):
     @wraps(func)
     def wrap(*orig_args, **kwargs):
         try:
-            if not hasattr(_thread_local, 'depth'):
+            if not hasattr(_thread_local, "depth"):
                 _thread_local.depth = 0
             _thread_local.depth += 1
 
@@ -25,3 +25,8 @@ def sq(func):
             _thread_local.depth -= 1
 
     return wrap
+
+
+def update_sd_progress(perc, prompt_id):
+    progress = {"value": perc, "max": 100, "prompt_id": prompt_id, "queue": 1}
+    requests.post("http://authproxy:7860/cui/progress", json=progress, timeout=2)

@@ -3,8 +3,9 @@ Business Logic Handler
 Encapsulates all data processing and business logic as a bridge between model and UI
 """
 import os
+import uuid
 
-from acestep.sq import sq
+from acestep.sq import sq, update_sd_progress
 
 # Disable tokenizers parallelism to avoid fork warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -2817,6 +2818,7 @@ class AceStepHandler:
             def progress(*args, **kwargs):
                 pass
 
+        prompt_id = str(uuid.uuid4())
         if self.model is None or self.vae is None or self.text_tokenizer is None or self.text_encoder is None:
             return {
                 "audios": [],
@@ -2844,6 +2846,7 @@ class AceStepHandler:
         logger.info("[generate_music] Starting generation...")
         if progress:
             progress(0.51, desc="Preparing inputs...")
+        update_sd_progress(51, prompt_id)
         logger.info("[generate_music] Preparing inputs...")
         
         # Reset offload cost
@@ -2917,6 +2920,7 @@ class AceStepHandler:
             )
             
             progress(0.52, desc=f"Generating music (batch size: {actual_batch_size})...")
+            update_sd_progress(52, prompt_id)
             
             # Prepare audio_code_hints - use if audio_code_string is provided
             # This works for both text2music (auto-switched to cover) and cover tasks
@@ -2960,6 +2964,7 @@ class AceStepHandler:
             logger.debug(f"[generate_music] time_costs: {time_costs}")
             if progress:
                 progress(0.8, desc="Decoding audio...")
+            update_sd_progress(80, prompt_id)
             logger.info("[generate_music] Decoding latents with VAE...")
             
             # Decode latents to audio
@@ -3014,6 +3019,7 @@ class AceStepHandler:
             logger.info("[generate_music] VAE decode completed. Preparing audio tensors...")
             if progress:
                 progress(0.99, desc="Preparing audio data...")
+            update_sd_progress(99, prompt_id)
             
             # Prepare audio tensors (no file I/O here, no UUID generation)
             # pred_wavs is already [batch, channels, samples] format
@@ -3027,6 +3033,7 @@ class AceStepHandler:
             
             status_message = f"✅ Generation completed successfully!"
             logger.info(f"[generate_music] Done! Generated {len(audio_tensors)} audio tensors.")
+            update_sd_progress(0, "")
             
             # Extract intermediate information from outputs
             src_latents = outputs.get("src_latents")  # [batch, T, D]
