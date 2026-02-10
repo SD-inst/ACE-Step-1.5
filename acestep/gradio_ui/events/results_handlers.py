@@ -1539,6 +1539,7 @@ def generate_with_batch_management(
             gr.skip(), gr.skip(), gr.skip(), gr.skip(),
             gr.skip(), gr.skip(), gr.skip(), gr.skip(), gr.skip(),
         )
+        time_module.sleep(0.1)
     result = final_result_from_inner
     all_audio_paths = result[8]
 
