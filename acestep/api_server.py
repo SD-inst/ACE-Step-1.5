@@ -41,6 +41,7 @@ except ImportError:  # Optional dependency
     load_dotenv = None  # type: ignore
 
 from fastapi import FastAPI, HTTPException, Request, Depends, Header
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
@@ -68,6 +69,7 @@ from acestep.gpu_config import (
     is_lm_model_supported,
     GPUConfig,
     VRAM_16GB_MIN_GB,
+    VRAM_AUTO_OFFLOAD_THRESHOLD_GB,
 )
 
 
@@ -892,13 +894,33 @@ class RequestParser:
 def _validate_audio_path(path: Optional[str]) -> Optional[str]:
     """Validate a user-supplied audio file path to prevent path traversal attacks.
 
-    Rejects absolute paths and paths containing '..' traversal sequences.
-    Returns the validated path or None if the input is None/empty.
+    Accepts absolute paths strictly only if they are within the system temporary directory.
+    Otherwise, rejects absolute paths and paths containing '..' traversal sequences.
+    
+    Returns the validated, normalized path or None if the input is None/empty.
     Raises HTTPException 400 if the path is unsafe.
     """
     if not path:
         return None
-    # Reject absolute paths (Unix and Windows)
+    
+    # Resolve requested path and system temp path to normalized absolute forms
+    import tempfile
+    system_temp = os.path.realpath(tempfile.gettempdir())
+    requested_path = os.path.realpath(path)
+
+    # SECURE CHECK: Use os.path.commonpath to verify directory boundary integrity.
+    # This prevents prefix bypasses (e.g., /tmp_evil when /tmp is allowed).
+    try:
+        is_in_temp = os.path.commonpath([system_temp, requested_path]) == system_temp
+    except ValueError:
+        # Occurs on Windows if paths are on different drives
+        is_in_temp = False
+
+    if is_in_temp:
+        # Accept server-generated files in temp
+        return requested_path
+
+    # Reject manual absolute paths outside of temp
     if os.path.isabs(path):
         raise HTTPException(status_code=400, detail="absolute audio file paths are not allowed")
     # Reject path traversal via '..' components
@@ -1899,7 +1921,7 @@ def create_app() -> FastAPI:
         app.state.gpu_config = gpu_config
 
         gpu_memory_gb = gpu_config.gpu_memory_gb
-        auto_offload = gpu_memory_gb > 0 and gpu_memory_gb < VRAM_16GB_MIN_GB
+        auto_offload = gpu_memory_gb > 0 and gpu_memory_gb < VRAM_AUTO_OFFLOAD_THRESHOLD_GB
 
         # Print GPU configuration info
         print(f"\n{'='*60}")
@@ -2154,6 +2176,16 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="ACE-Step API", version="1.0", lifespan=lifespan)
 
+    # Enable CORS for browser-based frontends (e.g. studio.html opened via file://)
+    # Restricted to localhost origins and the "null" origin (file:// protocol)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["null", "http://localhost", "http://127.0.0.1"],
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
+
     # Mount OpenRouter-compatible endpoints (/v1/chat/completions, /v1/models)
     from acestep.openrouter_adapter import create_openrouter_router
     openrouter_router = create_openrouter_router(lambda: app.state)
@@ -2208,8 +2240,8 @@ def create_app() -> FastAPI:
                 repainting_end=p.float("repainting_end"),
                 instruction=p.str("instruction", DEFAULT_DIT_INSTRUCTION),
                 audio_cover_strength=p.float("audio_cover_strength", 1.0),
-                reference_audio_path=_validate_audio_path(ref_audio),
-                src_audio_path=_validate_audio_path(src_audio),
+                reference_audio_path=ref_audio,
+                src_audio_path=src_audio,
                 task_type=p.str("task_type", "text2music"),
                 use_adg=p.bool("use_adg"),
                 cfg_interval_start=p.float("cfg_interval_start", 0.0),
@@ -2240,14 +2272,27 @@ def create_app() -> FastAPI:
             if not isinstance(body, dict):
                 raise HTTPException(status_code=400, detail="JSON payload must be an object")
             verify_token_from_request(body, authorization)
-            req = _build_request(RequestParser(body))
+            
+            # Explicitly validate manual string paths from JSON input
+            p = RequestParser(body)
+            req = _build_request(
+                p,
+                reference_audio_path=_validate_audio_path(p.str("reference_audio_path") or None),
+                src_audio_path=_validate_audio_path(p.str("src_audio_path") or None)
+            )
 
         elif content_type.endswith("+json"):
             body = await request.json()
             if not isinstance(body, dict):
                 raise HTTPException(status_code=400, detail="JSON payload must be an object")
             verify_token_from_request(body, authorization)
-            req = _build_request(RequestParser(body))
+            
+            p = RequestParser(body)
+            req = _build_request(
+                p,
+                reference_audio_path=_validate_audio_path(p.str("reference_audio_path") or None),
+                src_audio_path=_validate_audio_path(p.str("src_audio_path") or None)
+            )
 
         elif content_type.startswith("multipart/form-data"):
             form = await request.form()
@@ -2300,7 +2345,12 @@ def create_app() -> FastAPI:
                     body = json.loads(raw.decode("utf-8"))
                     if isinstance(body, dict):
                         verify_token_from_request(body, authorization)
-                        req = _build_request(RequestParser(body))
+                        p = RequestParser(body)
+                        req = _build_request(
+                            p,
+                            reference_audio_path=_validate_audio_path(p.str("reference_audio_path") or None),
+                            src_audio_path=_validate_audio_path(p.str("src_audio_path") or None)
+                        )
                     else:
                         raise HTTPException(status_code=400, detail="JSON payload must be an object")
                 except HTTPException:
