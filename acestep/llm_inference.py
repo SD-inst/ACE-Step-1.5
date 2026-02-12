@@ -550,45 +550,6 @@ class LLMHandler:
                 self.llm_backend = "vllm"
 
                 _warn_if_prerelease_python()
-                total_gb = get_gpu_memory_gb() if device == "cuda" else 0.0
-                free_gb = 0.0
-                if device == "cuda" and torch.cuda.is_available():
-                    try:
-                        if hasattr(torch.cuda, "mem_get_info"):
-                            free_bytes, _ = torch.cuda.mem_get_info()
-                            free_gb = free_bytes / (1024**3)
-                        else:
-                            total_bytes = torch.cuda.get_device_properties(0).total_memory
-                            free_gb = (total_bytes - torch.cuda.memory_reserved(0)) / (1024**3)
-                    except Exception:
-                        free_gb = 0.0
-                if device == "cuda" and free_gb < VRAM_SAFE_FREE_GB:
-                    logger.warning(
-                        f"vLLM disabled due to insufficient free VRAM (total={total_gb:.2f}GB, free={free_gb:.2f}GB, need>={VRAM_SAFE_FREE_GB}GB free) — falling back to PyTorch backend"
-                    )
-                    success, status_msg = self._load_pytorch_model(full_lm_model_path, device)
-                    if not success:
-                        return status_msg, False
-                    status_msg = f"✅ 5Hz LM initialized successfully (PyTorch fallback)\nModel: {full_lm_model_path}\nBackend: PyTorch"
-                else:
-                    status_msg = self._initialize_5hz_lm_vllm(
-                        full_lm_model_path,
-                        enforce_eager=enforce_eager_for_vllm,
-                    )
-                    logger.info(f"5Hz LM status message: {status_msg}")
-                    if status_msg.startswith("❌"):
-                        if not self.llm_initialized:
-                            if device == "mps" and self._is_mlx_available():
-                                logger.warning("vllm failed on MPS, trying MLX backend...")
-                                mlx_success, mlx_status = self._load_mlx_model(full_lm_model_path)
-                                if mlx_success:
-                                    return mlx_status, True
-                                logger.warning(f"MLX also failed: {mlx_status}, falling back to PyTorch")
-                            logger.warning("Falling back to PyTorch backend")
-                            success, status_msg = self._load_pytorch_model(full_lm_model_path, device)
-                            if not success:
-                                return status_msg, False
-                            status_msg = f"✅ 5Hz LM initialized successfully (PyTorch fallback)\nModel: {full_lm_model_path}\nBackend: PyTorch"
             elif backend != "mlx":
                 success, status_msg = self._load_pytorch_model(full_lm_model_path, device)
                 if not success:
