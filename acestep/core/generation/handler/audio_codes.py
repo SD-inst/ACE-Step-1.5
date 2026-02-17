@@ -7,6 +7,8 @@ from typing import List, Optional
 import torch
 from loguru import logger
 
+from acestep.sq import sq
+
 
 class AudioCodesMixin:
     """Mixin containing audio-code parsing and latent conversion helpers.
@@ -65,6 +67,7 @@ class AudioCodesMixin:
             lm_hints_25hz = detokenizer(quantized)
             return lm_hints_25hz
 
+    @sq
     def convert_src_audio_to_codes(self, audio_file) -> str:
         """Convert uploaded source audio into serialized audio code tokens."""
         if audio_file is None:
