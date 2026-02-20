@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 from loguru import logger
 
 from acestep.constants import DEFAULT_DIT_INSTRUCTION
+from acestep.sq import sq
 
 
 class GenerateMusicMixin:
@@ -19,6 +20,7 @@ class GenerateMusicMixin:
     orchestration flow.
     """
 
+    @sq
     def generate_music(
         self,
         captions: str,

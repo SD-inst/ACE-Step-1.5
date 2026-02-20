@@ -16,6 +16,7 @@ import torch
 
 
 from acestep.audio_utils import AudioSaver, generate_uuid_from_params, normalize_audio, get_lora_weights_hash
+from acestep.sq import sq
 
 # HuggingFace Space environment detection
 IS_HUGGINGFACE_SPACE = os.environ.get("SPACE_ID") is not None
@@ -307,6 +308,7 @@ def _update_metadata_from_lm(
 
 
 @_get_spaces_gpu_decorator(duration=180)
+@sq
 def generate_music(
     dit_handler,
     llm_handler,
