@@ -70,6 +70,127 @@ _load_env_file() {
 
 _load_env_file
 
+# ==================== Manual Startup Configuration ====================
+# Ask for manual settings
+_load_manual() {
+    echo -e "\033[1;36m"
+    echo "======================================================"
+    echo "            ACE-Step Manual Launch Mode"
+    echo "======================================================"
+    echo
+
+    while true; do
+        read -rp "Continue with manual configuration? (Y/N): " MANUAL_CHOICE
+        case "$MANUAL_CHOICE" in
+            [Yy])
+                break ;;
+            [Nn])
+                echo -e "\033[0m"
+                echo "Proceeding with automatic configuration..."
+                echo
+                return 0 ;;
+            *)
+                echo "Invalid input. Please enter Y or N." ;;
+        esac
+    done
+
+    echo
+    echo "-------------------- Update Settings --------------------"
+    while true; do
+        read -rp "Check for updates before launch? (Y/N): " UPDATE_CHOICE
+        case "$UPDATE_CHOICE" in
+            [Yy])
+                CHECK_UPDATE="true"
+                break ;;
+            [Nn])
+                CHECK_UPDATE="false"
+                break ;;
+            *)
+                echo "Invalid input. Please enter Y or N." ;;
+        esac
+    done
+
+    echo
+    echo "-------------------- Select DiT Model --------------------"
+    echo "1) acestep-v15-base"
+    echo "2) acestep-v15-sft"
+    echo "3) acestep-v15-turbo (Recommended)"
+    echo "4) acestep-v15-turbo-rl"
+    echo
+    while true; do
+        read -rp "Enter selection (1-4): " DIT_CHOICE
+        case "$DIT_CHOICE" in
+            1)
+                CONFIG_PATH="--config_path acestep-v15-base"
+                break ;;
+            2)
+                CONFIG_PATH="--config_path acestep-v15-sft"
+                break ;;
+            3)
+                CONFIG_PATH="--config_path acestep-v15-turbo"
+                break ;;
+            4)
+                CONFIG_PATH="--config_path acestep-v15-turbo-rl"
+                break ;;
+            *)
+                echo "Invalid input. Please enter a number between 1 and 4." ;;
+        esac
+    done
+
+    echo
+    echo "-------------------- Select LM Model --------------------"
+    echo "1) acestep-5Hz-lm-0.6B (Recommended)"
+    echo "2) acestep-5Hz-lm-1.7B"
+    echo "3) acestep-5Hz-lm-4B"
+    echo "4) Launch without LM Model"
+    echo
+    while true; do
+        read -rp "Enter selection (1-4): " LM_CHOICE
+        case "$LM_CHOICE" in
+            1)
+                LM_MODEL_PATH="--lm_model_path acestep-5Hz-lm-0.6B"
+                INIT_LLM="--init_llm true"
+                break ;;
+            2)
+                LM_MODEL_PATH="--lm_model_path acestep-5Hz-lm-1.7B"
+                INIT_LLM="--init_llm true"
+                break ;;
+            3)
+                LM_MODEL_PATH="--lm_model_path acestep-5Hz-lm-4B"
+                INIT_LLM="--init_llm true"
+                break ;;
+            4)
+                LM_MODEL_PATH=""
+                INIT_LLM="--init_llm false"
+                break ;;
+            *)
+                echo "Invalid input. Please enter a number between 1 and 4." ;;
+        esac
+    done
+
+    echo
+    echo "-------------------- CPU Offload Option --------------------"
+    while true; do
+        read -rp "Enable CPU Offload? (Y/N): " OFFLOAD_CHOICE
+        case "$OFFLOAD_CHOICE" in
+            [Yy])
+                OFFLOAD_TO_CPU="--offload_to_cpu true"
+                break ;;
+            [Nn])
+                OFFLOAD_TO_CPU="--offload_to_cpu false"
+                break ;;
+            *)
+                echo "Invalid input. Please enter Y or N." ;;
+        esac
+    done
+
+    echo -e "\033[0m"
+    echo "Manual configuration applied successfully."
+    echo
+}
+
+_load_manual
+
 # ==================== ROCm Configuration ====================
 # Force PyTorch LM backend (bypasses nano-vllm flash_attn dependency)
 export ACESTEP_LM_BACKEND="pt"
