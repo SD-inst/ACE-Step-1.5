@@ -3960,6 +3960,7 @@ class LLMHandler:
             self.llm.exit()
             del self.llm
             self.llm = None
+            self._cleanup_torch_distributed_state()
         gc.collect()
         torch.cuda.empty_cache()
 
