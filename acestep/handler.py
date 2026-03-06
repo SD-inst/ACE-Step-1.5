@@ -3,8 +3,6 @@ Business Logic Handler
 Encapsulates all data processing and business logic as a bridge between model and UI
 """
 import os
-
-from acestep.sq import sq, update_sd_progress
 import sys
 
 # Disable tokenizers parallelism to avoid fork warning

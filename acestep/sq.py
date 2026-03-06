@@ -1,4 +1,3 @@
-from functools import wraps
 import requests
 import threading
 
@@ -9,7 +8,6 @@ _thread_local = threading.local()
 
 
 def sq(func):
-    @wraps(func)
     def wrap(*orig_args, **kwargs):
         try:
             if not hasattr(_thread_local, "depth"):

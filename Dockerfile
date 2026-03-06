@@ -14,5 +14,5 @@ RUN --mount=type=cache,target=/root/.cache pip install uv
 RUN useradd -m -u 1000 ubuntu
 USER 1000:1000
 RUN mkdir -p /home/ubuntu/.cache
-RUN --mount=type=cache,target=/home/ubuntu/.cache,uid=1000,gid=1000 uv sync && uv pip install -e acestep/third_parts/nano-vllm
+RUN --mount=type=cache,target=/home/ubuntu/.cache,uid=1000,gid=1000 uv sync
 ENTRYPOINT ["uv", "run", "acestep"]
