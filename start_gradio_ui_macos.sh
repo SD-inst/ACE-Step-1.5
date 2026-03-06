@@ -200,11 +200,11 @@ _startup_update_check() {
     echo "  Current: $commit  ->  Latest: $remote_commit"
     echo
     echo "  Recent changes:"
-    git --no-pager log --oneline "HEAD..origin/$branch" 2>/dev/null | head -10
+    git --no-pager log --oneline -10 "HEAD..origin/$branch" 2>/dev/null
     echo
 
     read -rp "Update now before starting? (Y/N): " update_choice
-    if [[ "${update_choice^^}" == "Y" ]]; then
+    if [[ "$(echo "$update_choice" | tr '[:lower:]' '[:upper:]')" == "Y" ]]; then
         if [[ -f "$SCRIPT_DIR/check_update.sh" ]]; then
             bash "$SCRIPT_DIR/check_update.sh"
         else
@@ -232,18 +232,15 @@ echo
 if [[ -f "$SCRIPT_DIR/python_embeded/bin/python3.11" ]]; then
     echo "[Environment] Found embedded Python, verifying..."
 
-    # Ensure executable permissions on binaries (may be lost after extraction)
+    # Proactively fix permissions and Gatekeeper BEFORE any execution attempt.
+    # On macOS Sequoia, running a quarantined binary triggers a blocking popup,
+    # so we must strip attributes and re-sign first.
     chmod +x "$SCRIPT_DIR/python_embeded/bin/"* 2>/dev/null || true
-
-    # Remove macOS quarantine/provenance attributes and re-sign binaries (Gatekeeper fix)
-    if ! "$SCRIPT_DIR/python_embeded/bin/python3.11" -c "pass" 2>/dev/null; then
-        echo "[Setup] Fixing macOS Gatekeeper restrictions..."
-        echo "[Setup]   Removing quarantine attributes..."
-        xattr -cr "$SCRIPT_DIR/python_embeded" 2>/dev/null || true
-        echo "[Setup]   Re-signing binaries (ad-hoc)..."
-        find "$SCRIPT_DIR/python_embeded" -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) \
-            -exec codesign --force --sign - {} \; 2>/dev/null || true
-    fi
+    echo "[Setup] Removing quarantine attributes..."
+    xattr -cr "$SCRIPT_DIR/python_embeded" 2>/dev/null || true
+    echo "[Setup] Re-signing binaries (ad-hoc)..."
+    find "$SCRIPT_DIR/python_embeded" -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) \
+        -exec codesign --force --sign - {} \; 2>/dev/null || true
 
     if "$SCRIPT_DIR/python_embeded/bin/python3.11" -c "pass" 2>/dev/null; then
         echo "[Environment] Using embedded Python."
@@ -264,7 +261,7 @@ if [[ -f "$SCRIPT_DIR/python_embeded/bin/python3.11" ]]; then
             fi
             if [[ $_need_mlx_fix -eq 1 ]]; then
                 echo "[Setup] Fixing MLX packages (this only runs once)..."
-                "$PYTHON_EXE" -m pip install --upgrade mlx mlx-lm 2>&1 | tail -1
+                "$PYTHON_EXE" -m pip install --upgrade mlx mlx-lm 'transformers>=4.51.0,<4.58.0' 'vector-quantize-pytorch>=1.27.15,<1.28.0' 2>&1 | tail -1
             fi
         fi
 
@@ -316,7 +313,7 @@ if ! command -v uv &>/dev/null; then
     echo
     read -rp "Install uv now? (Y/N): " INSTALL_UV
 
-    if [[ "${INSTALL_UV^^}" == "Y" ]]; then
+    if [[ "$(echo "$INSTALL_UV" | tr '[:lower:]' '[:upper:]')" == "Y" ]]; then
         echo
         bash "$SCRIPT_DIR/install_uv.sh" --silent
         INSTALL_RESULT=$?
