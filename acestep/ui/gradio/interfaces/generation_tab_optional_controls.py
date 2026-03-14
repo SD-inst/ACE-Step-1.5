@@ -112,7 +112,6 @@ def build_optional_parameter_controls(
                 step=1,
                 info=t("generation.batch_size_info") + f" (Max: {max_batch_size})",
                 elem_classes=["has-info-container"],
-                interactive=not service_mode,
             )
         with gr.Row(elem_classes=["auto-toggles-row"]):
             duration_auto = gr.Checkbox(
